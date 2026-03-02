@@ -1,11 +1,11 @@
 {
   "name": "AnimeBase DE",
-  "author": "Community Developer",
-  "version": "1.0.1",
+  "author": "Community",
+  "version": "1.1.0",
   "language": "de",
   "baseUrl": "https://animebase.to",
   "icon": "https://www.animebase.to",
-  "discover": "discover.js",
-  "search": "search.js",
-  "media": "media.js"
+  "discover": "discover.js.js",
+  "search": "search.js.js",
+  "media": "media.js.js"
 }
