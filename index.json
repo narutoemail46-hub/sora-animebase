@@ -1,15 +1,11 @@
 {
-  "sourceName": "AnimeBase DE",
-  "author": {
-    "name": "Community Developer",
-    "icon": "https://example.com/icon.png"
-  },
-  "iconUrl": "https://www.animebase.to/favicon.ico",
+  "name": "AnimeBase DE",
+  "author": "Community Developer",
   "version": "1.0.0",
   "language": "de",
   "baseUrl": "https://animebase.to",
-  "streamType": "HLS",
-  "quality": "variable",
-  "searchBaseUrl": "https://animebase.to/anime/liste?search={keyword}",
-  "scriptUrl": "service.js"
+  "icon": "https://www.animebase.to/favicon.ico",
+  "module": "discover.js",
+  "search": "search.js",
+  "media": "media.js"
 }
