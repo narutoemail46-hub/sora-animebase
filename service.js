@@ -1,4 +1,4 @@
-// service.js - TESTVERSION mit festen Animes
+// service.js für Anime-Base.net - DAS IST DIE FINALE VERSION!
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -14,50 +14,115 @@ function toAbsoluteUrl(relativeUrl) {
     }
 }
 
-// === TEST: Feste Anime-Liste (ignoriert die Webseite) ===
-async function extractDetails(url) {
-    // Gibt TEST-Animes zurück - OHNE Scraping!
-    return [
-        { 
-            title: "One Piece (TEST)", 
-            thumbnail: "https://via.placeholder.com/150", 
-            link: "https://anime-base.net/anime/one-piece" 
-        },
-        { 
-            title: "Jujutsu Kaisen (TEST)", 
-            thumbnail: "https://via.placeholder.com/150", 
-            link: "https://anime-base.net/anime/jujutsu-kaisen" 
-        },
-        { 
-            title: "Demon Slayer (TEST)", 
-            thumbnail: "https://via.placeholder.com/150", 
-            link: "https://anime-base.net/anime/demon-slayer" 
-        }
-    ];
+async function extractDetails(url = 'https://anime-base.net/anime-liste') {
+    try {
+        const response = await axios.get(url, { 
+            headers: { 'User-Agent': USER_AGENT } 
+        });
+        
+        const $ = cheerio.load(response.data);
+        const animeList = [];
+
+        // DEINE SELEKTOREN:
+        $('.anime-list .anime').each((index, element) => {
+            // Titel
+            const titleElement = $(element).find('.anime .title');
+            const title = titleElement.text().trim();
+            
+            // Bild
+            const imageElement = $(element).find('.anime img');
+            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
+            
+            // Link (vom Titel-Element)
+            const linkElement = $(element).find('.anime .title[href]');
+            const link = linkElement.attr('href');
+
+            if (title && link) {
+                animeList.push({
+                    title: title,
+                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
+                    link: toAbsoluteUrl(link)
+                });
+            }
+        });
+
+        console.log(`[AnimeBase] Gefundene Animes: ${animeList.length}`);
+        return animeList;
+    } catch (error) {
+        console.error('Fehler:', error.message);
+        return [];
+    }
 }
 
 async function searchResults(keyword) {
-    // Einfache Suche - filtert die Test-Animes
-    const testAnimes = await extractDetails();
-    if (!keyword) return testAnimes;
+    if (!keyword) return [];
+    const searchUrl = `https://anime-base.net/anime-liste?title=${encodeURIComponent(keyword)}`;
     
-    return testAnimes.filter(anime => 
-        anime.title.toLowerCase().includes(keyword.toLowerCase())
-    );
+    try {
+        const response = await axios.get(searchUrl, { headers: { 'User-Agent': USER_AGENT } });
+        const $ = cheerio.load(response.data);
+        const results = [];
+
+        // GLEICHE SELEKTOREN:
+        $('.anime-list .anime').each((index, element) => {
+            const title = $(element).find('.anime .title').first().text().trim();
+            const thumbnail = $(element).find('.anime img').first().attr('src') || $(element).find('img').first().attr('data-src');
+            const link = $(element).find('.anime .title[href]').first().attr('href');
+
+            if (title && link && title.toLowerCase().includes(keyword.toLowerCase())) {
+                results.push({
+                    title: title,
+                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
+                    link: toAbsoluteUrl(link)
+                });
+            }
+        });
+
+        return results.slice(0, 20);
+    } catch (error) {
+        console.error('Suchfehler:', error.message);
+        return [];
+    }
 }
 
 async function extractEpisodes(url) {
-    // Test-Episoden
-    return [
-        { title: "Episode 1 [Ger Sub]", url: "https://anime-base.net/episode/1", number: 1 },
-        { title: "Episode 2 [Ger Sub]", url: "https://anime-base.net/episode/2", number: 2 },
-        { title: "Episode 3 [Ger Dub]", url: "https://anime-base.net/episode/3", number: 3 }
-    ];
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
+        const $ = cheerio.load(response.data);
+        const episodes = [];
+
+        $('a[href*="/anime/"]').each((index, element) => {
+            const href = $(element).attr('href');
+            if (href && href.includes('/episode/')) {
+                episodes.push({
+                    title: `Episode ${index + 1}`,
+                    url: toAbsoluteUrl(href),
+                    number: index + 1
+                });
+            }
+        });
+
+        return episodes;
+    } catch (error) {
+        console.error('Episoden-Fehler:', error.message);
+        return [];
+    }
 }
 
 async function extractStreamUrl(url) {
-    // Test-Stream
-    return "https://test-stream.com/video.mp4";
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
+        const $ = cheerio.load(response.data);
+        
+        let videoUrl = $('iframe').attr('src') || 
+                      $('video source').attr('src') || 
+                      $('[data-video]').attr('data-video');
+
+        return videoUrl ? toAbsoluteUrl(videoUrl) : null;
+    } catch (error) {
+        console.error('Stream-Fehler:', error.message);
+        return null;
+    }
 }
 
 module.exports = {
