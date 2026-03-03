@@ -9,7 +9,7 @@
   "streamType": "HLS",
   "quality": "1080p",
   "baseUrl": "https://anime-base.net",
-  "searchBaseUrl": "https://anime-base.net/anime-liste?title={keyword}",
+  "searchBaseUrl": "https://anime-base.net/anime-liste?title=%s",
   "scriptUrl": "https://raw.githubusercontent.com/narutoemail46-hub/sora-animebase/main/service.js",
   "asyncJS": true,
   "streamAsyncJS": false,
