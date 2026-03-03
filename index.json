@@ -1,0 +1,17 @@
+{
+  "sourceName": "AnimeBase DE",
+  "author": {
+    "name": "Community Developer",
+    "icon": "https://example.com/icon.png"
+  },
+  "iconUrl": "https://www.anime-base.net/favicon.ico",
+  "version": "1.0.0",
+  "language": "de",
+  "baseUrl": "https://anime-base.net",
+  "streamType": "HLS",
+  "quality": "1080p",
+  "searchBaseUrl": "https://anime-base.net/anime-liste?title={keyword}",
+  "scriptUrl": "service.js",
+  "asyncJS": true,
+  "type": "anime"
+}
