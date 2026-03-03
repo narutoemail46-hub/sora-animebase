@@ -1,4 +1,4 @@
-// service.js für Anime-Base.net - Mit korrekten Selektoren!
+// service.js - TESTVERSION mit festen Animes
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -14,147 +14,50 @@ function toAbsoluteUrl(relativeUrl) {
     }
 }
 
-// === ENTDECKEN (Anime-Liste) ===
-async function extractDetails(url = 'https://anime-base.net/anime-liste') {
-    try {
-        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
-        const $ = cheerio.load(response.data);
-        const animeList = [];
-
-        // Jeden Anime-Container durchgehen
-        $('.anime-item, .series-item').each((index, element) => {
-            // Titel auslesen - oft in h3 oder a-Tags
-            const titleElement = $(element).find('h3 a, .title a, a[href^="/anime/"]');
-            const title = titleElement.text().trim();
-            
-            // Bild auslesen
-            const imageElement = $(element).find('img');
-            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
-            
-            // Link auslesen
-            const linkElement = $(element).find('a[href^="/anime/"]').first();
-            const link = linkElement.attr('href');
-
-            if (title && link) {
-                animeList.push({
-                    title: title,
-                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
-                    link: toAbsoluteUrl(link)
-                });
-            }
-        });
-
-        console.log(`[AnimeBase] Gefundene Animes: ${animeList.length}`);
-        return animeList;
-    } catch (error) {
-        console.error('Fehler in extractDetails:', error.message);
-        return [];
-    }
+// === TEST: Feste Anime-Liste (ignoriert die Webseite) ===
+async function extractDetails(url) {
+    // Gibt TEST-Animes zurück - OHNE Scraping!
+    return [
+        { 
+            title: "One Piece (TEST)", 
+            thumbnail: "https://via.placeholder.com/150", 
+            link: "https://anime-base.net/anime/one-piece" 
+        },
+        { 
+            title: "Jujutsu Kaisen (TEST)", 
+            thumbnail: "https://via.placeholder.com/150", 
+            link: "https://anime-base.net/anime/jujutsu-kaisen" 
+        },
+        { 
+            title: "Demon Slayer (TEST)", 
+            thumbnail: "https://via.placeholder.com/150", 
+            link: "https://anime-base.net/anime/demon-slayer" 
+        }
+    ];
 }
 
-// === SUCHE ===
 async function searchResults(keyword) {
-    if (!keyword) return [];
-    const searchUrl = `https://anime-base.net/anime-liste?title=${encodeURIComponent(keyword)}`;
+    // Einfache Suche - filtert die Test-Animes
+    const testAnimes = await extractDetails();
+    if (!keyword) return testAnimes;
     
-    try {
-        const response = await axios.get(searchUrl, { headers: { 'User-Agent': USER_AGENT } });
-        const $ = cheerio.load(response.data);
-        const results = [];
-
-        $('.anime-item, .series-item').each((index, element) => {
-            const titleElement = $(element).find('h3 a, .title a, a[href^="/anime/"]');
-            const title = titleElement.text().trim();
-            const imageElement = $(element).find('img');
-            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
-            const linkElement = $(element).find('a[href^="/anime/"]').first();
-            const link = linkElement.attr('href');
-
-            if (title && link) {
-                results.push({
-                    title: title,
-                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
-                    link: toAbsoluteUrl(link)
-                });
-            }
-        });
-
-        return results.slice(0, 20);
-    } catch (error) {
-        console.error('Suchfehler:', error.message);
-        return [];
-    }
+    return testAnimes.filter(anime => 
+        anime.title.toLowerCase().includes(keyword.toLowerCase())
+    );
 }
 
-// === EPISODEN (von der Anime-Detailseite) ===
 async function extractEpisodes(url) {
-    try {
-        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
-        const $ = cheerio.load(response.data);
-        const episodes = [];
-
-        // Basierend auf deinem HTML-Code: Episoden sind in einer Liste
-        $('.episode-list tr, .episode-row, .episode-item').each((index, element) => {
-            const episodeLinkElement = $(element).find('a[href*="/anime/"]');
-            const episodeNumber = $(element).find('.episode-number, td:first-child').text().trim();
-            
-            const episodeUrl = episodeLinkElement.attr('href');
-            
-            // Prüfe auf Deutsch (Ger Sub / Ger Dub)
-            let episodeTitle = `Episode ${episodeNumber || index + 1}`;
-            const text = $(element).text();
-            if (text.includes('Ger Sub') || text.includes('German Sub')) {
-                episodeTitle += ' [Ger Sub]';
-            } else if (text.includes('Ger Dub') || text.includes('German Dub')) {
-                episodeTitle += ' [Ger Dub]';
-            }
-
-            if (episodeUrl) {
-                episodes.push({
-                    title: episodeTitle,
-                    url: toAbsoluteUrl(episodeUrl),
-                    number: index + 1
-                });
-            }
-        });
-
-        return episodes;
-    } catch (error) {
-        console.error('Episoden-Fehler:', error.message);
-        return [];
-    }
+    // Test-Episoden
+    return [
+        { title: "Episode 1 [Ger Sub]", url: "https://anime-base.net/episode/1", number: 1 },
+        { title: "Episode 2 [Ger Sub]", url: "https://anime-base.net/episode/2", number: 2 },
+        { title: "Episode 3 [Ger Dub]", url: "https://anime-base.net/episode/3", number: 3 }
+    ];
 }
 
-// === STREAM-URL (von der Episodenseite) ===
 async function extractStreamUrl(url) {
-    try {
-        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
-        const $ = cheerio.load(response.data);
-        
-        // Suche nach Video-URL in iframes oder video-tags
-        let videoUrl = null;
-        
-        // Oft sind die Streams in iframes eingebettet (Vidoza, Streamtape, etc.)
-        const iframe = $('iframe').attr('src');
-        if (iframe) {
-            videoUrl = iframe;
-        }
-        
-        // Manchmal auch direkt in video-tags
-        if (!videoUrl) {
-            videoUrl = $('video source').attr('src');
-        }
-        
-        // Oder in data-attributen
-        if (!videoUrl) {
-            videoUrl = $('[data-video]').attr('data-video');
-        }
-
-        return videoUrl ? toAbsoluteUrl(videoUrl) : null;
-    } catch (error) {
-        console.error('Stream-Fehler:', error.message);
-        return null;
-    }
+    // Test-Stream
+    return "https://test-stream.com/video.mp4";
 }
 
 module.exports = {
