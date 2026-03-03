@@ -1,16 +1,16 @@
 {
   "sourceName": "AnimeBase DE",
+  "iconUrl": "https://www.anime-base.net/favicon.ico",
   "author": {
     "name": "Community Developer"
   },
-  "iconUrl": "https://www.anime-base.net/favicon.ico",
   "version": "1.0.0",
-  "language": "de",
-  "baseUrl": "https://anime-base.net",
+  "language": "German",
   "streamType": "HLS",
   "quality": "1080p",
+  "baseUrl": "https://anime-base.net",
   "searchBaseUrl": "https://anime-base.net/anime-liste?title={keyword}",
-  "scriptUrl": "service.js",
+  "scriptUrl": "https://raw.githubusercontent.com/narutoemail46-hub/sora-animebase/main/service.js",
   "asyncJS": true,
   "streamAsyncJS": false,
   "type": "anime",
