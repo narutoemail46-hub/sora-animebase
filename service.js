@@ -12,11 +12,7 @@ function toAbsoluteUrl(url) {
 
 async function extractDetails(url = BASE_URL + '/anime-liste') {
     try {
-        const { data } = await axios.get(url, { 
-            headers: { 'User-Agent': USER_AGENT },
-            timeout: 10000
-        });
-        
+        const { data } = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(data);
         const results = [];
 
@@ -37,24 +33,16 @@ async function extractDetails(url = BASE_URL + '/anime-liste') {
                 });
             }
         });
-
         return results;
-    } catch (error) {
-        console.error('extractDetails error:', error.message);
-        return [];
-    }
+    } catch { return []; }
 }
 
 async function searchResults(keyword) {
     if (!keyword) return [];
-    const url = `${BASE_URL}/anime-liste?title=${encodeURIComponent(keyword)}`;
-    
     try {
-        const { data } = await axios.get(url, { 
-            headers: { 'User-Agent': USER_AGENT },
-            timeout: 10000
+        const { data } = await axios.get(`${BASE_URL}/anime-liste?title=${encodeURIComponent(keyword)}`, {
+            headers: { 'User-Agent': USER_AGENT }
         });
-        
         const $ = cheerio.load(data);
         const results = [];
 
@@ -75,21 +63,13 @@ async function searchResults(keyword) {
                 });
             }
         });
-
         return results.slice(0, 20);
-    } catch (error) {
-        console.error('searchResults error:', error.message);
-        return [];
-    }
+    } catch { return []; }
 }
 
 async function extractEpisodes(url) {
     try {
-        const { data } = await axios.get(url, { 
-            headers: { 'User-Agent': USER_AGENT },
-            timeout: 10000
-        });
-        
+        const { data } = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(data);
         const episodes = [];
 
@@ -103,30 +83,16 @@ async function extractEpisodes(url) {
                 });
             }
         });
-
         return episodes;
-    } catch (error) {
-        console.error('extractEpisodes error:', error.message);
-        return [];
-    }
+    } catch { return []; }
 }
 
 async function extractStreamUrl(url) {
     try {
-        const { data } = await axios.get(url, { 
-            headers: { 'User-Agent': USER_AGENT },
-            timeout: 10000
-        });
-        
+        const { data } = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(data);
-        const iframeSrc = $('iframe').attr('src');
-        const videoSrc = $('video source').attr('src');
-        
-        return toAbsoluteUrl(iframeSrc || videoSrc);
-    } catch (error) {
-        console.error('extractStreamUrl error:', error.message);
-        return null;
-    }
+        return toAbsoluteUrl($('iframe').attr('src') || $('video source').attr('src'));
+    } catch { return null; }
 }
 
 module.exports = {
