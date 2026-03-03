@@ -1,4 +1,4 @@
-// service.js für Anime-Base.net - FINALE VERSION!
+// service.js - MIT den richtigen Selektoren aus deinem Code!
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -16,45 +16,25 @@ function toAbsoluteUrl(relativeUrl) {
 
 async function extractDetails(url = 'https://anime-base.net/anime-liste') {
     try {
-        const response = await axios.get(url, { 
-            headers: { 'User-Agent': USER_AGENT } 
-        });
-        
+        const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         const animeList = [];
 
         // Jedes Element mit der Klasse "group" ist ein Anime
         $('.group').each((index, element) => {
-            // Titel aus h3
-            const titleElement = $(element).find('h3');
-            const title = titleElement.text().trim();
-            
-            // Bild
-            const imageElement = $(element).find('img');
-            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
-            
-            // Link
-            const linkElement = $(element).find('a[href^="/anime/"]');
-            const link = linkElement.attr('href');
-
-            // Sprach-Erkennung
-            const hasGerSub = $(element).find('.bg-blue-500\\/20').length > 0;
-            const hasGerDub = $(element).find('.bg-green-500\\/20').length > 0;
-            
-            let titleWithLang = title;
-            if (hasGerSub) titleWithLang += ' [Ger Sub]';
-            if (hasGerDub) titleWithLang += ' [Ger Dub]';
+            const title = $(element).find('h3').first().text().trim();
+            const thumbnail = $(element).find('img').first().attr('src') || $(element).find('img').first().attr('data-src');
+            const link = $(element).find('a[href^="/anime/"]').first().attr('href');
 
             if (title && link) {
                 animeList.push({
-                    title: titleWithLang,
+                    title: title,
                     thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
                     link: toAbsoluteUrl(link)
                 });
             }
         });
 
-        console.log(`[AnimeBase] Gefundene Animes: ${animeList.length}`);
         return animeList;
     } catch (error) {
         console.error('Fehler:', error.message);
@@ -71,29 +51,21 @@ async function searchResults(keyword) {
         const $ = cheerio.load(response.data);
         const results = [];
 
-        // Gleiche Logik wie oben
         $('.group').each((index, element) => {
             const title = $(element).find('h3').first().text().trim();
             const thumbnail = $(element).find('img').first().attr('src') || $(element).find('img').first().attr('data-src');
             const link = $(element).find('a[href^="/anime/"]').first().attr('href');
-            
-            const hasGerSub = $(element).find('.bg-blue-500\\/20').length > 0;
-            const hasGerDub = $(element).find('.bg-green-500\\/20').length > 0;
-            
-            let titleWithLang = title;
-            if (hasGerSub) titleWithLang += ' [Ger Sub]';
-            if (hasGerDub) titleWithLang += ' [Ger Dub]';
 
-            if (title && link && title.toLowerCase().includes(keyword.toLowerCase())) {
+            if (title && link) {
                 results.push({
-                    title: titleWithLang,
+                    title: title,
                     thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
                     link: toAbsoluteUrl(link)
                 });
             }
         });
 
-        return results.slice(0, 20);
+        return results;
     } catch (error) {
         console.error('Suchfehler:', error.message);
         return [];
@@ -106,15 +78,13 @@ async function extractEpisodes(url) {
         const $ = cheerio.load(response.data);
         const episodes = [];
 
-        $('a[href*="/anime/"]').each((index, element) => {
+        $('a[href*="/episode/"]').each((index, element) => {
             const href = $(element).attr('href');
-            if (href && href.includes('/episode/')) {
-                episodes.push({
-                    title: `Episode ${index + 1}`,
-                    url: toAbsoluteUrl(href),
-                    number: index + 1
-                });
-            }
+            episodes.push({
+                title: `Episode ${index + 1}`,
+                url: toAbsoluteUrl(href),
+                number: index + 1
+            });
         });
 
         return episodes;
@@ -129,10 +99,7 @@ async function extractStreamUrl(url) {
         const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         
-        let videoUrl = $('iframe').attr('src') || 
-                      $('video source').attr('src') || 
-                      $('[data-video]').attr('data-video');
-
+        let videoUrl = $('iframe').attr('src') || $('video source').attr('src');
         return videoUrl ? toAbsoluteUrl(videoUrl) : null;
     } catch (error) {
         console.error('Stream-Fehler:', error.message);
