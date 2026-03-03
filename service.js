@@ -1,4 +1,4 @@
-// service.js für Anime-Base.net
+// service.js für Anime-Base.net - Mit korrekten Selektoren!
 const axios = require('axios');
 const cheerio = require('cheerio');
 
@@ -15,29 +15,36 @@ function toAbsoluteUrl(relativeUrl) {
 }
 
 // === ENTDECKEN (Anime-Liste) ===
-async function extractDetails(url = 'https://anime-base.net/anime') {
+async function extractDetails(url = 'https://anime-base.net/anime-liste') {
     try {
         const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         const animeList = [];
 
-        // !!! HIER DEN RICHTIGEN CONTAINER-SELEKTOR EINSETZEN !!!
-        // Beispiel: $('.series-list .item').each(...
-        $('!!! CONTAINER_SELECTOR !!!').each((index, element) => {
-            // !!! HIER DIE SELEKTOREN FÜR TITEL, BILD UND LINK EINSETZEN !!!
-            const title = $(element).find('!!! TITLE_SELECTOR !!!').text().trim();
-            const thumbnail = $(element).find('!!! IMAGE_SELECTOR !!!').attr('src');
-            const link = $(element).find('!!! LINK_SELECTOR !!!').attr('href');
+        // Jeden Anime-Container durchgehen
+        $('.anime-item, .series-item').each((index, element) => {
+            // Titel auslesen - oft in h3 oder a-Tags
+            const titleElement = $(element).find('h3 a, .title a, a[href^="/anime/"]');
+            const title = titleElement.text().trim();
+            
+            // Bild auslesen
+            const imageElement = $(element).find('img');
+            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
+            
+            // Link auslesen
+            const linkElement = $(element).find('a[href^="/anime/"]').first();
+            const link = linkElement.attr('href');
 
             if (title && link) {
                 animeList.push({
                     title: title,
-                    thumbnail: thumbnail || '',
+                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
                     link: toAbsoluteUrl(link)
                 });
             }
         });
 
+        console.log(`[AnimeBase] Gefundene Animes: ${animeList.length}`);
         return animeList;
     } catch (error) {
         console.error('Fehler in extractDetails:', error.message);
@@ -48,24 +55,28 @@ async function extractDetails(url = 'https://anime-base.net/anime') {
 // === SUCHE ===
 async function searchResults(keyword) {
     if (!keyword) return [];
-    const searchUrl = `https://anime-base.net/anime?title=${encodeURIComponent(keyword)}`;
+    const searchUrl = `https://anime-base.net/anime-liste?title=${encodeURIComponent(keyword)}`;
     
     try {
         const response = await axios.get(searchUrl, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         const results = [];
 
-        // !!! HIER DIESELBEN SELEKTOREN WIE OBEN EINSETZEN !!!
-        $('!!! CONTAINER_SELECTOR !!!').each((index, element) => {
-            const title = $(element).find('!!! TITLE_SELECTOR !!!').text().trim();
-            const thumbnail = $(element).find('!!! IMAGE_SELECTOR !!!').attr('src');
-            const link = $(element).find('!!! LINK_SELECTOR !!!').attr('href');
+        $('.anime-item, .series-item').each((index, element) => {
+            const titleElement = $(element).find('h3 a, .title a, a[href^="/anime/"]');
+            const title = titleElement.text().trim();
+            const imageElement = $(element).find('img');
+            const thumbnail = imageElement.attr('src') || imageElement.attr('data-src');
+            const linkElement = $(element).find('a[href^="/anime/"]').first();
+            const link = linkElement.attr('href');
 
-            results.push({
-                title: title,
-                thumbnail: thumbnail || '',
-                link: toAbsoluteUrl(link)
-            });
+            if (title && link) {
+                results.push({
+                    title: title,
+                    thumbnail: thumbnail ? toAbsoluteUrl(thumbnail) : '',
+                    link: toAbsoluteUrl(link)
+                });
+            }
         });
 
         return results.slice(0, 20);
@@ -75,23 +86,33 @@ async function searchResults(keyword) {
     }
 }
 
-// === EPISODEN ===
+// === EPISODEN (von der Anime-Detailseite) ===
 async function extractEpisodes(url) {
     try {
         const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         const episodes = [];
 
-        // !!! SELEKTOR FÜR DIE EPISODENLISTE !!!
-        $('!!! EPISODE_CONTAINER !!!').each((index, element) => {
-            // !!! SELEKTOR FÜR EPISODEN-LINK UND -NUMMER !!!
-            const episodeLink = $(element).find('!!! EPISODE_LINK !!!').attr('href');
-            const episodeNumber = $(element).find('!!! EPISODE_NUMBER !!!').text().trim();
+        // Basierend auf deinem HTML-Code: Episoden sind in einer Liste
+        $('.episode-list tr, .episode-row, .episode-item').each((index, element) => {
+            const episodeLinkElement = $(element).find('a[href*="/anime/"]');
+            const episodeNumber = $(element).find('.episode-number, td:first-child').text().trim();
+            
+            const episodeUrl = episodeLinkElement.attr('href');
+            
+            // Prüfe auf Deutsch (Ger Sub / Ger Dub)
+            let episodeTitle = `Episode ${episodeNumber || index + 1}`;
+            const text = $(element).text();
+            if (text.includes('Ger Sub') || text.includes('German Sub')) {
+                episodeTitle += ' [Ger Sub]';
+            } else if (text.includes('Ger Dub') || text.includes('German Dub')) {
+                episodeTitle += ' [Ger Dub]';
+            }
 
-            if (episodeLink) {
+            if (episodeUrl) {
                 episodes.push({
-                    title: `Episode ${episodeNumber || index + 1}`,
-                    url: toAbsoluteUrl(episodeLink),
+                    title: episodeTitle,
+                    url: toAbsoluteUrl(episodeUrl),
                     number: index + 1
                 });
             }
@@ -104,16 +125,30 @@ async function extractEpisodes(url) {
     }
 }
 
-// === STREAM ===
+// === STREAM-URL (von der Episodenseite) ===
 async function extractStreamUrl(url) {
     try {
         const response = await axios.get(url, { headers: { 'User-Agent': USER_AGENT } });
         const $ = cheerio.load(response.data);
         
-        // Suche nach Video-URL (häufig in iframes oder video-tags)
-        let videoUrl = $('video source').attr('src') || 
-                      $('iframe').attr('src') || 
-                      $('[data-video]').attr('data-video');
+        // Suche nach Video-URL in iframes oder video-tags
+        let videoUrl = null;
+        
+        // Oft sind die Streams in iframes eingebettet (Vidoza, Streamtape, etc.)
+        const iframe = $('iframe').attr('src');
+        if (iframe) {
+            videoUrl = iframe;
+        }
+        
+        // Manchmal auch direkt in video-tags
+        if (!videoUrl) {
+            videoUrl = $('video source').attr('src');
+        }
+        
+        // Oder in data-attributen
+        if (!videoUrl) {
+            videoUrl = $('[data-video]').attr('data-video');
+        }
 
         return videoUrl ? toAbsoluteUrl(videoUrl) : null;
     } catch (error) {
