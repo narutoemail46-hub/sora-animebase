@@ -6,13 +6,12 @@
   },
   "version": "1.0.0",
   "language": "German",
+  "baseUrl": "https://anime-base.net",
   "streamType": "HLS",
   "quality": "1080p",
-  "baseUrl": "https://anime-base.net",
   "searchBaseUrl": "https://anime-base.net/anime-liste?title=%s",
-  "scriptUrl": "https://raw.githubusercontent.com/narutoemail46-hub/sora-animebase/main/service.js",
+  "scriptUrl": "",
   "asyncJS": true,
-  "streamAsyncJS": false,
   "type": "anime",
   "supportsSora": true
 }
