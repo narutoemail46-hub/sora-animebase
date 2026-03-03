@@ -1,8 +1,7 @@
 {
   "sourceName": "AnimeBase DE",
   "author": {
-    "name": "Community Developer",
-    "icon": "https://example.com/icon.png"
+    "name": "Community Developer"
   },
   "iconUrl": "https://www.anime-base.net/favicon.ico",
   "version": "1.0.0",
