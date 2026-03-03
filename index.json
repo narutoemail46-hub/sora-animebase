@@ -10,9 +10,8 @@
   "streamType": "HLS",
   "quality": "1080p",
   "searchBaseUrl": "https://anime-base.net/anime-liste?title={keyword}",
-  "scriptUrl": "service.js",
+  "scriptUrl": "",
   "asyncJS": true,
-  "streamAsyncJS": false,
   "type": "anime",
   "supportsSora": true
 }
